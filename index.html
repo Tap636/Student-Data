@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>School Data Capture</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin: 20px;
+      background: #f4f4f4;
+    }
+    video, canvas {
+      border: 2px solid #333;
+      border-radius: 10px;
+      margin: 10px;
+      max-width: 100%;
+    }
+    .hidden {
+      display: none;
+    }
+    input, button {
+      padding: 10px;
+      margin: 5px;
+      font-size: 16px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>📸 School Data Capture</h1>
+  
+  <video id="video" autoplay playsinline width="320" height="240"></video>
+  <br>
+  <button id="captureBtn">Capture Photo</button>
+  
+  <canvas id="canvas" width="320" height="240" class="hidden"></canvas>
+  
+  <div id="formSection" class="hidden">
+    <h3>Enter Details</h3>
+    <input type="text" id="studentName" placeholder="Student Name" required>
+    <input type="text" id="studentClass" placeholder="Class (e.g. 9th)" required>
+    <br>
+    <button id="saveBtn">Save Image</button>
+  </div>
+  
+  <script>
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const context = canvas.getContext('2d');
+    const captureBtn = document.getElementById('captureBtn');
+    const formSection = document.getElementById('formSection');
+    const saveBtn = document.getElementById('saveBtn');
+
+    // ✅ Open camera
+    navigator.mediaDevices.getUserMedia({ video: true })
+      .then(stream => {
+        video.srcObject = stream;
+      })
+      .catch(err => {
+        alert("Camera access denied: " + err);
+      });
+
+    // ✅ Capture photo
+    captureBtn.addEventListener('click', () => {
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+      canvas.classList.remove('hidden');
+      formSection.classList.remove('hidden');
+    });
+
+    // ✅ Save image
+    saveBtn.addEventListener('click', () => {
+      const studentName = document.getElementById('studentName').value.trim();
+      const studentClass = document.getElementById('studentClass').value.trim();
+
+      if (!studentName || !studentClass) {
+        alert("Please enter both name and class!");
+        return;
+      }
+
+      const fileName = `${studentClass}-${studentName}.jpg`;
+
+      canvas.toBlob(blob => {
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = fileName;
+        link.click();
+      }, 'image/jpeg');
+    });
+  </script>
+
+</body>
+</html>
