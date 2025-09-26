@@ -2,48 +2,149 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>School Data Capture</title>
+  <title>NGVM PASSCAP</title>
   <style>
     body {
       font-family: Arial, sans-serif;
+      margin: 0;
+      background: linear-gradient(135deg, #ff7e00, #0077ff);
+      color: #fff;
       text-align: center;
-      margin: 20px;
-      background: #f4f4f4;
+    }
+    header {
+      background: rgba(0,0,0,0.3);
+      padding: 15px;
+      font-size: 28px;
+      font-weight: bold;
+      letter-spacing: 2px;
     }
     video, canvas {
-      border: 2px solid #333;
+      border: 3px solid #fff;
       border-radius: 10px;
-      margin: 10px;
+      margin: 10px auto;
+      display: block;
       max-width: 100%;
     }
     .hidden {
       display: none;
     }
-    input, button {
+    input, select, button {
       padding: 10px;
-      margin: 5px;
+      margin: 8px;
       font-size: 16px;
+      border-radius: 8px;
+      border: none;
+    }
+    button {
+      background: #fff;
+      color: #333;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    button:hover {
+      background: #eee;
+    }
+    .form-container {
+      margin-top: 15px;
+    }
+    .gallery {
+      margin-top: 20px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 20px;
+    }
+    .card {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 10px;
+      width: 200px;
+      text-align: center;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    }
+    .card img {
+      width: 100%;
+      border-radius: 8px;
+      border: 2px solid #fff;
+    }
+    .download-icon {
+      font-size: 20px;
+      cursor: pointer;
+      margin-top: 8px;
+      display: inline-block;
+      background: #fff;
+      color: #333;
+      padding: 6px 10px;
+      border-radius: 50%;
+    }
+    .checkboxes {
+      margin: 10px 0;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+    }
+    .checkboxes label {
+      background: rgba(255,255,255,0.2);
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .checkboxes input {
+      margin-right: 6px;
     }
   </style>
 </head>
 <body>
 
-  <h1>📸 School Data Capture</h1>
-  
+  <header>📸 NGVM PASSCAP</header>
+
+  <!-- Live Camera -->
   <video id="video" autoplay playsinline width="320" height="240"></video>
   <br>
   <button id="captureBtn">Capture Photo</button>
-  
-  <canvas id="canvas" width="320" height="240" class="hidden"></canvas>
-  
-  <div id="formSection" class="hidden">
+
+  <!-- Captured Canvas -->
+  <canvas id="canvas" width="200" height="240" class="hidden"></canvas>
+
+  <!-- Form Section -->
+  <div id="formSection" class="hidden form-container">
     <h3>Enter Details</h3>
     <input type="text" id="studentName" placeholder="Student Name" required>
-    <input type="text" id="studentClass" placeholder="Class (e.g. 9th)" required>
+    
+    <select id="studentClass" required>
+      <option value="">Select Class</option>
+      <option value="NUR">NUR</option>
+      <option value="LKG">LKG</option>
+      <option value="UKG">UKG</option>
+      <option value="1st">1st</option>
+      <option value="2nd">2nd</option>
+      <option value="3rd">3rd</option>
+      <option value="4th">4th</option>
+      <option value="5th">5th</option>
+      <option value="6th">6th</option>
+      <option value="7th">7th</option>
+      <option value="8th">8th</option>
+      <option value="9th">9th</option>
+      <option value="10th">10th</option>
+      <option value="11th">11th</option>
+      <option value="12th">12th</option>
+    </select>
+
+    <div class="checkboxes">
+      <label><input type="checkbox" disabled> Paid</label>
+      <label><input type="checkbox" disabled> Not Paid</label>
+      <label><input type="checkbox" disabled> Card Issued</label>
+    </div>
+
     <br>
-    <button id="saveBtn">Save Image</button>
+    <button id="saveBtn">Save Photo</button>
+    <button id="newCaptureBtn">Capture New Photo</button>
   </div>
-  
+
+  <!-- Gallery Section -->
+  <div id="gallery" class="gallery"></div>
+
   <script>
     const video = document.getElementById('video');
     const canvas = document.getElementById('canvas');
@@ -51,6 +152,8 @@
     const captureBtn = document.getElementById('captureBtn');
     const formSection = document.getElementById('formSection');
     const saveBtn = document.getElementById('saveBtn');
+    const newCaptureBtn = document.getElementById('newCaptureBtn');
+    const gallery = document.getElementById('gallery');
 
     // ✅ Open camera
     navigator.mediaDevices.getUserMedia({ video: true })
@@ -66,9 +169,11 @@
       context.drawImage(video, 0, 0, canvas.width, canvas.height);
       canvas.classList.remove('hidden');
       formSection.classList.remove('hidden');
+      video.classList.add('hidden');
+      captureBtn.classList.add('hidden');
     });
 
-    // ✅ Save image
+    // ✅ Save photo
     saveBtn.addEventListener('click', () => {
       const studentName = document.getElementById('studentName').value.trim();
       const studentClass = document.getElementById('studentClass').value.trim();
@@ -78,16 +183,38 @@
         return;
       }
 
-      const fileName = `${studentClass}-${studentName}.jpg`;
-
       canvas.toBlob(blob => {
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = fileName;
-        link.click();
+        const url = URL.createObjectURL(blob);
+
+        // Create card
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+          <img src="${url}" alt="Student Photo">
+          <p><strong>${studentName}</strong></p>
+          <p>${studentClass}</p>
+          <a href="${url}" download="${studentClass}-${studentName}.jpg" class="download-icon">⬇</a>
+        `;
+        gallery.appendChild(card);
       }, 'image/jpeg');
+
+      // Reset form
+      document.getElementById('studentName').value = '';
+      document.getElementById('studentClass').value = '';
+      canvas.classList.add('hidden');
+      formSection.classList.add('hidden');
+      video.classList.remove('hidden');
+      captureBtn.classList.remove('hidden');
+    });
+
+    // ✅ New Capture
+    newCaptureBtn.addEventListener('click', () => {
+      canvas.classList.add('hidden');
+      formSection.classList.add('hidden');
+      video.classList.remove('hidden');
+      captureBtn.classList.remove('hidden');
     });
   </script>
 
 </body>
-</html>
+  </html>
