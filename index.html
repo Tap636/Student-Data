@@ -221,8 +221,8 @@
       }
 
       const zip = new JSZip();
-      classPhotos.forEach((p, i) => {
-        const fileName = `${p.class}-${p.name || 'student'}-${i+1}.jpg`;
+      classPhotos.forEach((p) => {
+        const fileName = `${p.name}.jpg`;   // ✅ Only student name
         zip.file(fileName, p.blob);
       });
 
