@@ -3,126 +3,113 @@
 <head>
   <meta charset="UTF-8">
   <title>NGVM PASSCAP</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
       margin: 0;
-      background: linear-gradient(135deg, orange, blue);
+      background: linear-gradient(135deg, #ff7e00, #0077ff);
       color: #fff;
+      text-align: center;
+      height: 100vh;
+      overflow: hidden; /* ✅ Lock scrolling */
       display: flex;
       flex-direction: column;
       align-items: center;
+      justify-content: flex-start;
     }
     header {
-      background: rgba(0,0,0,0.4);
-      width: 100%;
-      text-align: center;
+      background: rgba(0,0,0,0.3);
       padding: 15px;
       font-size: 28px;
       font-weight: bold;
+      letter-spacing: 2px;
+      width: 100%;
+      position: relative;
     }
     #newProjectBtn {
       position: absolute;
-      top: 70px;
-      left: 20px;
-      padding: 8px 14px;
-      font-size: 14px;
+      left: 15px;
+      bottom: -40px;
       background: #fff;
-      color: #000;
-      border: none;
-      border-radius: 8px;
+      color: #333;
+      padding: 10px 18px;
+      border-radius: 10px;
+      font-size: 16px;
       cursor: pointer;
+      font-weight: bold;
     }
     video, canvas {
       border: 3px solid #fff;
-      border-radius: 10px;
-      margin: 15px 0;
-      max-width: 100%;
-      width: 500px;
+      border-radius: 12px;
+      margin: 30px auto 15px;
+      display: block;
+      width: 300px;   /* ✅ Passport size ratio */
       height: 380px;
       object-fit: cover;
+      background: #000;
     }
-    .hidden { display: none; }
-    input, select {
-      padding: 10px;
-      margin: 5px;
-      font-size: 16px;
-      border-radius: 6px;
+    .hidden {
+      display: none;
+    }
+    input, select, button {
+      padding: 14px 20px;
+      margin: 10px;
+      font-size: 18px;
+      border-radius: 10px;
       border: none;
     }
     button {
-      cursor: pointer;
-    }
-    .capture-btn {
-      width: 90px;
-      height: 90px;
-      border-radius: 50%;
-      border: none;
       background: #fff;
-      color: black;
-      font-size: 16px;
-      font-weight: bold;
-      margin: 20px 0;
+      color: #333;
       cursor: pointer;
-      box-shadow: 0px 4px 10px rgba(0,0,0,0.5);
-      transition: 0.2s;
+      font-weight: bold;
     }
-    .capture-btn:hover {
-      transform: scale(1.05);
+    button:hover {
+      background: #eee;
     }
-    #formSection {
+    .form-container {
       margin-top: 10px;
     }
-    #gallery {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      margin-top: 20px;
+    .download-section {
+      margin-top: 10px;
     }
-    .photo-card {
-      background: rgba(255,255,255,0.1);
-      border: 1px solid #fff;
-      border-radius: 12px;
-      padding: 10px;
-      margin: 10px;
-      text-align: center;
-    }
-    .photo-card img {
-      width: 150px;
-      height: 180px;
-      object-fit: cover;
-      border-radius: 8px;
-      border: 2px solid #fff;
-    }
-    .download-btn {
-      margin-top: 5px;
-      background: #fff;
-      color: black;
-      padding: 5px 10px;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-    #downloadZipSection {
-      margin-top: 20px;
-      text-align: center;
+    /* ✅ Big Capture Button */
+    #captureBtn {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      font-size: 16px;
+      font-weight: bold;
+      margin-top: 15px;
+      box-shadow: 0px 4px 10px rgba(0,0,0,0.5);
     }
   </style>
 </head>
 <body>
 
-  <header>📸 NGVM PASSCAP</header>
-  <button id="newProjectBtn">New Project</button>
+  <header>
+    📸 NGVM PASSCAP
+    <button id="newProjectBtn">New Project</button>
+  </header>
 
+  <!-- Live Camera -->
   <video id="video" autoplay playsinline></video>
-  <canvas id="canvas" width="500" height="380" class="hidden"></canvas>
+  <br>
+  <button id="captureBtn">CAPTURE</button>
 
-  <div id="formSection" class="hidden">
+  <!-- Captured Canvas -->
+  <canvas id="canvas" class="hidden"></canvas>
+
+  <!-- Form Section -->
+  <div id="formSection" class="hidden form-container">
     <h3>Enter Details</h3>
     <input type="text" id="studentName" placeholder="Student Name" required>
+    
     <select id="studentClass" required>
       <option value="">Select Class</option>
-      <option value="Nur">Nur</option>
+      <option value="NUR">NUR</option>
       <option value="LKG">LKG</option>
       <option value="UKG">UKG</option>
       <option value="1st">1st</option>
@@ -138,18 +125,16 @@
       <option value="11th">11th</option>
       <option value="12th">12th</option>
     </select>
+    <br>
+    <button id="saveBtn">Save Photo</button>
+    <button id="newCaptureBtn">Capture Again</button>
   </div>
 
-  <!-- ✅ Big round capture button -->
-  <button id="captureBtn" class="capture-btn">CAPTURE</button>
-
-  <div id="gallery"></div>
-
-  <div id="downloadZipSection">
-    <h3>Download ZIP by Class</h3>
+  <!-- Download ZIP -->
+  <div class="download-section">
     <select id="downloadClass">
-      <option value="">Select Class</option>
-      <option value="Nur">Nur</option>
+      <option value="">Select Class for ZIP</option>
+      <option value="NUR">NUR</option>
       <option value="LKG">LKG</option>
       <option value="UKG">UKG</option>
       <option value="1st">1st</option>
@@ -165,79 +150,81 @@
       <option value="11th">11th</option>
       <option value="12th">12th</option>
     </select>
-    <button id="downloadZipBtn" class="download-btn">Download ZIP</button>
+    <button id="downloadZipBtn">Download ZIP</button>
   </div>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
   <script>
     const video = document.getElementById('video');
     const canvas = document.getElementById('canvas');
     const context = canvas.getContext('2d');
     const captureBtn = document.getElementById('captureBtn');
     const formSection = document.getElementById('formSection');
-    const gallery = document.getElementById('gallery');
+    const saveBtn = document.getElementById('saveBtn');
+    const newCaptureBtn = document.getElementById('newCaptureBtn');
+    const newProjectBtn = document.getElementById('newProjectBtn');
     const downloadClass = document.getElementById('downloadClass');
     const downloadZipBtn = document.getElementById('downloadZipBtn');
-    const newProjectBtn = document.getElementById('newProjectBtn');
 
+    // Store captured photos
     let photos = [];
 
-    // ✅ Open REAR camera
-    navigator.mediaDevices.getUserMedia({ video: { facingMode: { exact: "environment" } } })
+    // ✅ Open rear camera
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
       .then(stream => {
         video.srcObject = stream;
       })
       .catch(err => {
-        alert("Camera access error: " + err);
+        alert("Camera access denied: " + err);
       });
 
     // ✅ Capture photo
     captureBtn.addEventListener('click', () => {
+      canvas.width = 300;  // ✅ Passport size
+      canvas.height = 380;
       context.drawImage(video, 0, 0, canvas.width, canvas.height);
+      canvas.classList.remove('hidden');
       formSection.classList.remove('hidden');
+      video.classList.add('hidden');
+      captureBtn.classList.add('hidden');
+    });
 
-      const saveBtn = document.createElement('button');
-      saveBtn.textContent = "Save Image";
-      saveBtn.className = "download-btn";
+    // ✅ Save photo
+    saveBtn.addEventListener('click', () => {
+      const studentName = document.getElementById('studentName').value.trim();
+      const studentClass = document.getElementById('studentClass').value.trim();
 
-      // remove duplicate button if re-capturing
-      if (document.getElementById('saveBtn')) {
-        document.getElementById('saveBtn').remove();
+      if (!studentName || !studentClass) {
+        alert("Please enter both name and class!");
+        return;
       }
-      saveBtn.id = "saveBtn";
-      formSection.appendChild(saveBtn);
 
-      saveBtn.addEventListener('click', () => {
-        const studentName = document.getElementById('studentName').value.trim();
-        const studentClass = document.getElementById('studentClass').value;
+      canvas.toBlob(blob => {
+        photos.push({ class: studentClass, name: studentName, blob });
+      }, 'image/jpeg');
 
-        if (!studentName || !studentClass) {
-          alert("Please enter name and select class!");
-          return;
-        }
+      // Reset for next capture
+      document.getElementById('studentName').value = '';
+      document.getElementById('studentClass').value = '';
+      canvas.classList.add('hidden');
+      formSection.classList.add('hidden');
+      video.classList.remove('hidden');
+      captureBtn.classList.remove('hidden');
+    });
 
-        canvas.toBlob(blob => {
-          const imgURL = URL.createObjectURL(blob);
-          const imgElement = document.createElement('img');
-          imgElement.src = imgURL;
+    // ✅ New Capture
+    newCaptureBtn.addEventListener('click', () => {
+      canvas.classList.add('hidden');
+      formSection.classList.add('hidden');
+      video.classList.remove('hidden');
+      captureBtn.classList.remove('hidden');
+    });
 
-          const card = document.createElement('div');
-          card.className = "photo-card";
-          card.innerHTML = `<p>${studentName} (${studentClass})</p>`;
-          card.appendChild(imgElement);
-
-          gallery.appendChild(card);
-
-          // store in memory
-          photos.push({ name: studentName, class: studentClass, blob });
-
-          // clear form
-          document.getElementById('studentName').value = "";
-          document.getElementById('studentClass').value = "";
-          formSection.classList.add('hidden');
-        }, 'image/jpeg');
-      });
+    // ✅ New Project (clear all photos)
+    newProjectBtn.addEventListener('click', () => {
+      if (confirm("Are you sure you want to start a new project? All saved images will be lost.")) {
+        photos = [];
+        alert("New project started. All previous data cleared.");
+      }
     });
 
     // ✅ Download ZIP for class
@@ -256,21 +243,13 @@
 
       const zip = new JSZip();
       classPhotos.forEach((p) => {
-        const fileName = `${p.name}.jpg`; // ✅ only name
+        const fileName = `${p.name}.jpg`;   // ✅ Only student name
         zip.file(fileName, p.blob);
       });
 
       zip.generateAsync({ type: "blob" }).then(content => {
         saveAs(content, `${selectedClass}_photos.zip`);
       });
-    });
-
-    // ✅ New Project - Clear gallery and reset
-    newProjectBtn.addEventListener('click', () => {
-      if (confirm("Start a new project? This will clear all data.")) {
-        photos = [];
-        gallery.innerHTML = "";
-      }
     });
   </script>
 
