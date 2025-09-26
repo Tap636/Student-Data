@@ -7,248 +7,205 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
   <style>
     body {
-      font-family: Arial, sans-serif;
       margin: 0;
-      background: linear-gradient(135deg, #ff7e00, #0077ff);
-      color: #fff;
-      text-align: center;
-      height: 100vh;
-      overflow: hidden; /* ✅ Lock scrolling */
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: flex-start;
+      background: black;
+      overflow: hidden; /* 🚫 No scroll */
+      font-family: Arial, sans-serif;
+      color: white;
     }
     header {
-      background: rgba(0,0,0,0.3);
-      padding: 15px;
-      font-size: 28px;
-      font-weight: bold;
-      letter-spacing: 2px;
+      position: fixed;
+      top: 0;
       width: 100%;
-      position: relative;
+      height: 60px;
+      background: rgba(0,0,0,0.6);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 15px;
+      z-index: 10;
     }
-    #newProjectBtn {
-      position: absolute;
-      left: 15px;
-      bottom: -40px;
-      background: #fff;
-      color: #333;
-      padding: 10px 18px;
-      border-radius: 10px;
-      font-size: 16px;
+    header button {
+      background: none;
+      border: none;
+      color: white;
+      font-size: 18px;
       cursor: pointer;
-      font-weight: bold;
+    }
+    #camera-container {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: black;
     }
     video, canvas {
-      border: 3px solid #fff;
+      max-width: 100%;
+      max-height: 100%;
       border-radius: 12px;
-      margin: 30px auto 15px;
-      display: block;
-      width: 300px;   /* ✅ Passport size ratio */
-      height: 380px;
-      object-fit: cover;
-      background: #000;
     }
-    .hidden {
-      display: none;
-    }
-    input, select, button {
-      padding: 14px 20px;
-      margin: 10px;
-      font-size: 18px;
-      border-radius: 10px;
-      border: none;
-    }
-    button {
-      background: #fff;
-      color: #333;
-      cursor: pointer;
-      font-weight: bold;
-    }
-    button:hover {
-      background: #eee;
-    }
-    .form-container {
-      margin-top: 10px;
-    }
-    .download-section {
-      margin-top: 10px;
-    }
-    /* ✅ Big Capture Button */
     #captureBtn {
-      width: 100px;
-      height: 100px;
+      position: fixed;
+      bottom: 40px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 90px;
+      height: 90px;
+      background: white;
       border-radius: 50%;
+      border: 6px solid #ccc;
+      cursor: pointer;
+      z-index: 10;
+    }
+    #formModal {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.7);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 20;
+    }
+    #formBox {
+      background: white;
+      color: black;
+      padding: 20px;
+      border-radius: 12px;
+      text-align: center;
+      width: 280px;
+    }
+    #formBox input, #formBox select, #formBox button {
+      margin: 8px 0;
+      width: 100%;
+      padding: 10px;
       font-size: 16px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+    #notify {
+      position: fixed;
+      bottom: 100px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: green;
+      color: white;
+      padding: 12px 20px;
+      border-radius: 8px;
+      display: none;
+      z-index: 30;
       font-weight: bold;
-      margin-top: 15px;
-      box-shadow: 0px 4px 10px rgba(0,0,0,0.5);
     }
   </style>
 </head>
 <body>
 
   <header>
-    📸 NGVM PASSCAP
-    <button id="newProjectBtn">New Project</button>
+    <button id="newProjectBtn">🆕</button>
+    <div>📸 NGVM PASSCAP</div>
+    <button id="downloadZipBtn">⬇️</button>
   </header>
 
-  <!-- Live Camera -->
-  <video id="video" autoplay playsinline></video>
-  <br>
-  <button id="captureBtn">CAPTURE</button>
-
-  <!-- Captured Canvas -->
-  <canvas id="canvas" class="hidden"></canvas>
-
-  <!-- Form Section -->
-  <div id="formSection" class="hidden form-container">
-    <h3>Enter Details</h3>
-    <input type="text" id="studentName" placeholder="Student Name" required>
-    
-    <select id="studentClass" required>
-      <option value="">Select Class</option>
-      <option value="NUR">NUR</option>
-      <option value="LKG">LKG</option>
-      <option value="UKG">UKG</option>
-      <option value="1st">1st</option>
-      <option value="2nd">2nd</option>
-      <option value="3rd">3rd</option>
-      <option value="4th">4th</option>
-      <option value="5th">5th</option>
-      <option value="6th">6th</option>
-      <option value="7th">7th</option>
-      <option value="8th">8th</option>
-      <option value="9th">9th</option>
-      <option value="10th">10th</option>
-      <option value="11th">11th</option>
-      <option value="12th">12th</option>
-    </select>
-    <br>
-    <button id="saveBtn">Save Photo</button>
-    <button id="newCaptureBtn">Capture Again</button>
+  <div id="camera-container">
+    <video id="video" autoplay playsinline></video>
+    <canvas id="canvas" class="hidden"></canvas>
   </div>
 
-  <!-- Download ZIP -->
-  <div class="download-section">
-    <select id="downloadClass">
-      <option value="">Select Class for ZIP</option>
-      <option value="NUR">NUR</option>
-      <option value="LKG">LKG</option>
-      <option value="UKG">UKG</option>
-      <option value="1st">1st</option>
-      <option value="2nd">2nd</option>
-      <option value="3rd">3rd</option>
-      <option value="4th">4th</option>
-      <option value="5th">5th</option>
-      <option value="6th">6th</option>
-      <option value="7th">7th</option>
-      <option value="8th">8th</option>
-      <option value="9th">9th</option>
-      <option value="10th">10th</option>
-      <option value="11th">11th</option>
-      <option value="12th">12th</option>
-    </select>
-    <button id="downloadZipBtn">Download ZIP</button>
+  <button id="captureBtn"></button>
+
+  <!-- Modal for Name & Class -->
+  <div id="formModal">
+    <div id="formBox">
+      <h3>Enter Details</h3>
+      <input type="text" id="studentName" placeholder="Student Name" required>
+      <select id="studentClass" required>
+        <option value="">Select Class</option>
+        <option>NUR</option><option>LKG</option><option>UKG</option>
+        <option>1st</option><option>2nd</option><option>3rd</option>
+        <option>4th</option><option>5th</option><option>6th</option>
+        <option>7th</option><option>8th</option><option>9th</option>
+        <option>10th</option><option>11th</option><option>12th</option>
+      </select>
+      <button id="saveBtn">Save</button>
+    </div>
   </div>
+
+  <div id="notify">✅ Saved!</div>
 
   <script>
     const video = document.getElementById('video');
     const canvas = document.getElementById('canvas');
     const context = canvas.getContext('2d');
     const captureBtn = document.getElementById('captureBtn');
-    const formSection = document.getElementById('formSection');
+    const formModal = document.getElementById('formModal');
     const saveBtn = document.getElementById('saveBtn');
-    const newCaptureBtn = document.getElementById('newCaptureBtn');
     const newProjectBtn = document.getElementById('newProjectBtn');
-    const downloadClass = document.getElementById('downloadClass');
     const downloadZipBtn = document.getElementById('downloadZipBtn');
+    const notify = document.getElementById('notify');
 
-    // Store captured photos
     let photos = [];
 
-    // ✅ Open rear camera
-    navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
-      .then(stream => {
-        video.srcObject = stream;
-      })
-      .catch(err => {
-        alert("Camera access denied: " + err);
-      });
+    // ✅ Open rear camera with higher resolution
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment", width: {ideal:1920}, height:{ideal:1080} } })
+      .then(stream => { video.srcObject = stream; })
+      .catch(err => alert("Camera error: " + err));
 
-    // ✅ Capture photo
+    // ✅ Capture
     captureBtn.addEventListener('click', () => {
-      canvas.width = 300;  // ✅ Passport size
-      canvas.height = 380;
+      // high resolution for passport size
+      canvas.width = 1080;
+      canvas.height = 1440;
       context.drawImage(video, 0, 0, canvas.width, canvas.height);
-      canvas.classList.remove('hidden');
-      formSection.classList.remove('hidden');
       video.classList.add('hidden');
-      captureBtn.classList.add('hidden');
+      canvas.classList.remove('hidden');
+      formModal.style.display = 'flex';
     });
 
     // ✅ Save photo
     saveBtn.addEventListener('click', () => {
-      const studentName = document.getElementById('studentName').value.trim();
-      const studentClass = document.getElementById('studentClass').value.trim();
+      const name = document.getElementById('studentName').value.trim();
+      const sclass = document.getElementById('studentClass').value.trim();
 
-      if (!studentName || !studentClass) {
-        alert("Please enter both name and class!");
+      if (!name || !sclass) {
+        alert("Enter both name & class!");
         return;
       }
 
       canvas.toBlob(blob => {
-        photos.push({ class: studentClass, name: studentName, blob });
-      }, 'image/jpeg');
+        photos.push({ class: sclass, name, blob });
+      }, 'image/jpeg', 0.95);
 
-      // Reset for next capture
+      // reset
       document.getElementById('studentName').value = '';
       document.getElementById('studentClass').value = '';
-      canvas.classList.add('hidden');
-      formSection.classList.add('hidden');
       video.classList.remove('hidden');
-      captureBtn.classList.remove('hidden');
+      canvas.classList.add('hidden');
+      formModal.style.display = 'none';
+
+      // notify
+      notify.style.display = 'block';
+      setTimeout(()=> notify.style.display='none', 1500);
     });
 
-    // ✅ New Capture
-    newCaptureBtn.addEventListener('click', () => {
-      canvas.classList.add('hidden');
-      formSection.classList.add('hidden');
-      video.classList.remove('hidden');
-      captureBtn.classList.remove('hidden');
-    });
-
-    // ✅ New Project (clear all photos)
+    // ✅ New Project
     newProjectBtn.addEventListener('click', () => {
-      if (confirm("Are you sure you want to start a new project? All saved images will be lost.")) {
+      if(confirm("Start new project? All saved photos will be deleted.")){
         photos = [];
-        alert("New project started. All previous data cleared.");
+        alert("New project started.");
       }
     });
 
-    // ✅ Download ZIP for class
+    // ✅ Download ZIP
     downloadZipBtn.addEventListener('click', () => {
-      const selectedClass = downloadClass.value;
-      if (!selectedClass) {
-        alert("Please select a class!");
-        return;
-      }
-
-      const classPhotos = photos.filter(p => p.class === selectedClass);
-      if (classPhotos.length === 0) {
-        alert("No photos found for " + selectedClass);
-        return;
-      }
-
+      if (photos.length === 0) { alert("No photos saved."); return; }
       const zip = new JSZip();
-      classPhotos.forEach((p) => {
-        const fileName = `${p.name}.jpg`;   // ✅ Only student name
-        zip.file(fileName, p.blob);
+      photos.forEach(p => {
+        zip.file(`${p.class}_${p.name}.jpg`, p.blob);
       });
-
-      zip.generateAsync({ type: "blob" }).then(content => {
-        saveAs(content, `${selectedClass}_photos.zip`);
+      zip.generateAsync({type:"blob"}).then(content=>{
+        saveAs(content, "photos.zip");
       });
     });
   </script>
