@@ -3,6 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <title>NGVM PASSCAP</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -17,13 +19,27 @@
       font-size: 28px;
       font-weight: bold;
       letter-spacing: 2px;
+      position: relative;
+    }
+    #newProjectBtn {
+      position: absolute;
+      left: 15px;
+      bottom: -40px;
+      background: #fff;
+      color: #333;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 14px;
+      cursor: pointer;
+      font-weight: bold;
     }
     video, canvas {
       border: 3px solid #fff;
       border-radius: 10px;
-      margin: 10px auto;
+      margin: 20px auto;
       display: block;
-      max-width: 100%;
+      max-width: 90%;
+      height: auto;
     }
     .hidden {
       display: none;
@@ -47,65 +63,25 @@
     .form-container {
       margin-top: 15px;
     }
-    .gallery {
-      margin-top: 20px;
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 20px;
-    }
-    .card {
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 12px;
-      padding: 10px;
-      width: 200px;
-      text-align: center;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-    }
-    .card img {
-      width: 100%;
-      border-radius: 8px;
-      border: 2px solid #fff;
-    }
-    .download-icon {
-      font-size: 20px;
-      cursor: pointer;
-      margin-top: 8px;
-      display: inline-block;
-      background: #fff;
-      color: #333;
-      padding: 6px 10px;
-      border-radius: 50%;
-    }
-    .checkboxes {
-      margin: 10px 0;
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 10px;
-    }
-    .checkboxes label {
-      background: rgba(255,255,255,0.2);
-      padding: 6px 12px;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-    .checkboxes input {
-      margin-right: 6px;
+    .download-section {
+      margin: 20px;
     }
   </style>
 </head>
 <body>
 
-  <header>📸 NGVM PASSCAP</header>
+  <header>
+    📸 NGVM PASSCAP
+    <button id="newProjectBtn">New Project</button>
+  </header>
 
   <!-- Live Camera -->
-  <video id="video" autoplay playsinline width="320" height="240"></video>
+  <video id="video" autoplay playsinline width="480" height="360"></video>
   <br>
   <button id="captureBtn">Capture Photo</button>
 
   <!-- Captured Canvas -->
-  <canvas id="canvas" width="200" height="240" class="hidden"></canvas>
+  <canvas id="canvas" width="480" height="600" class="hidden"></canvas>
 
   <!-- Form Section -->
   <div id="formSection" class="hidden form-container">
@@ -130,20 +106,33 @@
       <option value="11th">11th</option>
       <option value="12th">12th</option>
     </select>
-
-    <div class="checkboxes">
-      <label><input type="checkbox" disabled> Paid</label>
-      <label><input type="checkbox" disabled> Not Paid</label>
-      <label><input type="checkbox" disabled> Card Issued</label>
-    </div>
-
     <br>
     <button id="saveBtn">Save Photo</button>
     <button id="newCaptureBtn">Capture New Photo</button>
   </div>
 
-  <!-- Gallery Section -->
-  <div id="gallery" class="gallery"></div>
+  <!-- Download ZIP -->
+  <div class="download-section">
+    <select id="downloadClass">
+      <option value="">Select Class for ZIP</option>
+      <option value="NUR">NUR</option>
+      <option value="LKG">LKG</option>
+      <option value="UKG">UKG</option>
+      <option value="1st">1st</option>
+      <option value="2nd">2nd</option>
+      <option value="3rd">3rd</option>
+      <option value="4th">4th</option>
+      <option value="5th">5th</option>
+      <option value="6th">6th</option>
+      <option value="7th">7th</option>
+      <option value="8th">8th</option>
+      <option value="9th">9th</option>
+      <option value="10th">10th</option>
+      <option value="11th">11th</option>
+      <option value="12th">12th</option>
+    </select>
+    <button id="downloadZipBtn">Download ZIP</button>
+  </div>
 
   <script>
     const video = document.getElementById('video');
@@ -153,10 +142,15 @@
     const formSection = document.getElementById('formSection');
     const saveBtn = document.getElementById('saveBtn');
     const newCaptureBtn = document.getElementById('newCaptureBtn');
-    const gallery = document.getElementById('gallery');
+    const newProjectBtn = document.getElementById('newProjectBtn');
+    const downloadClass = document.getElementById('downloadClass');
+    const downloadZipBtn = document.getElementById('downloadZipBtn');
 
-    // ✅ Open camera
-    navigator.mediaDevices.getUserMedia({ video: true })
+    // Store captured photos
+    let photos = [];
+
+    // ✅ Open rear camera
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
       .then(stream => {
         video.srcObject = stream;
       })
@@ -184,21 +178,10 @@
       }
 
       canvas.toBlob(blob => {
-        const url = URL.createObjectURL(blob);
-
-        // Create card
-        const card = document.createElement('div');
-        card.className = 'card';
-        card.innerHTML = `
-          <img src="${url}" alt="Student Photo">
-          <p><strong>${studentName}</strong></p>
-          <p>${studentClass}</p>
-          <a href="${url}" download="${studentClass}-${studentName}.jpg" class="download-icon">⬇</a>
-        `;
-        gallery.appendChild(card);
+        photos.push({ class: studentClass, name: studentName, blob });
       }, 'image/jpeg');
 
-      // Reset form
+      // Reset for next capture
       document.getElementById('studentName').value = '';
       document.getElementById('studentClass').value = '';
       canvas.classList.add('hidden');
@@ -214,7 +197,40 @@
       video.classList.remove('hidden');
       captureBtn.classList.remove('hidden');
     });
+
+    // ✅ New Project (clear all photos)
+    newProjectBtn.addEventListener('click', () => {
+      if (confirm("Are you sure you want to start a new project? All saved images will be lost.")) {
+        photos = [];
+        alert("New project started. All previous data cleared.");
+      }
+    });
+
+    // ✅ Download ZIP for class
+    downloadZipBtn.addEventListener('click', () => {
+      const selectedClass = downloadClass.value;
+      if (!selectedClass) {
+        alert("Please select a class!");
+        return;
+      }
+
+      const classPhotos = photos.filter(p => p.class === selectedClass);
+      if (classPhotos.length === 0) {
+        alert("No photos found for " + selectedClass);
+        return;
+      }
+
+      const zip = new JSZip();
+      classPhotos.forEach((p, i) => {
+        const fileName = `${p.class}-${p.name || 'student'}-${i+1}.jpg`;
+        zip.file(fileName, p.blob);
+      });
+
+      zip.generateAsync({ type: "blob" }).then(content => {
+        saveAs(content, `${selectedClass}_photos.zip`);
+      });
+    });
   </script>
 
 </body>
-  </html>
+</html>
