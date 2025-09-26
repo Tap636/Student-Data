@@ -1,154 +1,480 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>NGVM PASSCAP</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover" />
+  <title>NGVM PASSCAP — High Quality</title>
+
+  <!-- Libraries (load before main script) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
   <style>
-    body, html {
-      margin: 0;
-      padding: 0;
-      height: 100%;
-      overflow: hidden;
-      background: black;
+    /* --- Fullscreen locked layout --- */
+    html,body {
+      height:100%;
+      margin:0;
+      padding:0;
+      background:#000;
+      overflow:hidden; /* lock scrolling */
+      -webkit-user-select:none; user-select:none;
+      -webkit-touch-callout:none; -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
     }
-    #camera-container {
-      position: relative;
-      width: 100%;
-      height: 100%;
+
+    /* Camera root fills the screen exactly */
+    #cameraRoot {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #000;
     }
+
+    /* Video / Canvas cover entire device viewport without scroll */
     video, canvas {
       position: absolute;
-      top: 0;
-      left: 0;
+      inset: 0;
       width: 100%;
       height: 100%;
       object-fit: cover;
+      background: #000;
     }
-    #controls {
-      position: absolute;
-      top: 10px;
-      width: 100%;
-      display: flex;
-      justify-content: space-around;
-      z-index: 10;
+
+    /* Top bar with big buttons (like flash/auto) */
+    .topbar {
+      position: fixed;
+      top: 8px;
+      left: 8px;
+      right: 8px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      z-index: 60;
+      pointer-events: auto;
     }
-    #controls button {
-      padding: 15px 25px;
-      font-size: 18px;
-      border-radius: 12px;
-      border: none;
-      font-weight: bold;
-      cursor: pointer;
-      background: white;
-      color: black;
+
+    .left-controls, .right-controls {
+      display:flex;
+      gap:10px;
+      align-items:center;
     }
-    #captureBtn {
-      position: absolute;
-      bottom: 30px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 90px;
-      height: 90px;
-      border-radius: 50%;
-      border: 5px solid white;
-      background: red;
-      cursor: pointer;
-      z-index: 10;
-    }
-    #formSection {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background: rgba(0,0,0,0.8);
-      padding: 20px;
-      border-radius: 12px;
-      color: white;
-      z-index: 20;
-      text-align: center;
-    }
-    #formSection input, #formSection select, #formSection button {
-      margin: 10px;
-      padding: 12px;
+
+    .big-btn {
+      background: rgba(255,255,255,0.08);
+      color: #fff;
+      border: 1px solid rgba(255,255,255,0.12);
+      padding: 10px 14px;
       font-size: 16px;
-      border-radius: 8px;
-      border: none;
+      border-radius: 10px;
+      font-weight: 700;
+      min-height:48px;
+      display:flex;
+      align-items:center;
+      gap:8px;
+      cursor:pointer;
     }
-    #notify {
-      position: absolute;
-      bottom: 100px;
+
+    .big-btn:active { transform: translateY(1px); }
+
+    select.big-select {
+      background: rgba(255,255,255,0.06);
+      color: #fff;
+      border: 1px solid rgba(255,255,255,0.10);
+      padding: 10px 12px;
+      font-size: 16px;
+      border-radius: 10px;
+      appearance: none;
+      -webkit-appearance: none;
+      min-height:48px;
+    }
+
+    /* Bottom shutter area */
+    .bottombar {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 28px;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      z-index:60;
+      pointer-events:auto;
+    }
+
+    #captureBtn {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      border: 6px solid rgba(255,255,255,0.9);
+      background: radial-gradient(circle at 50% 35%, #fff, #ddd);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+      cursor: pointer;
+    }
+
+    /* Form modal (center) to enter Name/Class */
+    #formModal {
+      position: fixed;
+      inset: 0;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      z-index: 90;
+      background: rgba(0,0,0,0.55);
+      pointer-events:auto;
+    }
+    #formCard {
+      width: 340px; max-width:92%;
+      background:#fff; color:#000;
+      border-radius:12px; padding:16px;
+      text-align:center;
+    }
+    #formCard input, #formCard select {
+      width:100%; padding:10px 12px; margin:8px 0; font-size:16px; border-radius:8px; border:1px solid #ccc;
+    }
+    #formCard .save-btn{
+      width:100%; padding:12px; margin-top:8px; background:#007bff; color:#fff; border:none; border-radius:8px; font-weight:700; cursor:pointer;
+    }
+
+    /* Toast */
+    #toast {
+      position: fixed;
       left: 50%;
       transform: translateX(-50%);
-      background: rgba(0,255,0,0.8);
-      color: white;
-      padding: 10px 20px;
-      border-radius: 8px;
-      font-size: 18px;
-      display: none;
-      z-index: 30;
+      bottom: 140px;
+      background: rgba(0,0,0,0.75);
+      color: #fff;
+      padding: 10px 16px;
+      border-radius: 20px;
+      z-index: 95;
+      display:none;
+      font-weight:700;
     }
+
+    /* small overlay guide text (optional) */
+    .guide {
+      position: fixed;
+      top: 70px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index:70;
+      color: #fff;
+      padding:6px 12px;
+      border-radius:20px;
+      background: rgba(0,0,0,0.35);
+      font-weight:600;
+      font-size:14px;
+    }
+
+    /* Hide default outlines on mobile */
+    button:focus, select:focus, input:focus { outline: none; box-shadow:none; }
+
   </style>
 </head>
 <body>
 
-<div id="camera-container">
-  <video id="video" autoplay playsinline></video>
-  <canvas id="canvas" class="hidden"></canvas>
+  <div id="cameraRoot">
+    <video id="video" autoplay playsinline muted></video>
+    <canvas id="canvas" style="display:none;"></canvas>
 
-  <!-- Controls -->
-  <div id="controls">
-    <button id="clearDataBtn">🗑 Clear Data</button>
-    <button id="downloadZipBtn">⬇ Download ZIP</button>
+    <!-- Topbar -->
+    <div class="topbar" role="toolbar">
+      <div class="left-controls">
+        <button id="clearDataBtn" class="big-btn" title="Clear all saved photos">🗑️ Clear Data</button>
+      </div>
+
+      <div class="right-controls">
+        <select id="downloadClassSelect" class="big-select" title="Select class to download">
+          <option value="">All Classes (download all)</option>
+          <option value="NUR">NUR</option><option value="LKG">LKG</option><option value="UKG">UKG</option>
+          <option value="1st">1st</option><option value="2nd">2nd</option><option value="3rd">3rd</option>
+          <option value="4th">4th</option><option value="5th">5th</option><option value="6th">6th</option>
+          <option value="7th">7th</option><option value="8th">8th</option><option value="9th">9th</option>
+          <option value="10th">10th</option><option value="11th">11th</option><option value="12th">12th</option>
+        </select>
+        <button id="downloadZipBtn" class="big-btn" title="Download ZIP for selected class">⬇️ Download ZIP</button>
+      </div>
+    </div>
+
+    <!-- guide -->
+    <div class="guide">Align face in frame • Tap to capture</div>
+
+    <!-- shutter -->
+    <div class="bottombar">
+      <button id="captureBtn" aria-label="Capture"></button>
+    </div>
+
+    <!-- modal form -->
+    <div id="formModal" aria-hidden="true">
+      <div id="formCard" role="dialog" aria-modal="true">
+        <h3 style="margin:0 0 8px 0;">Save Photo</h3>
+        <input id="studentName" type="text" placeholder="Student Name" autocomplete="off" />
+        <select id="studentClass">
+          <option value="">Select Class</option>
+          <option value="NUR">NUR</option><option value="LKG">LKG</option><option value="UKG">UKG</option>
+          <option value="1st">1st</option><option value="2nd">2nd</option><option value="3rd">3rd</option>
+          <option value="4th">4th</option><option value="5th">5th</option><option value="6th">6th</option>
+          <option value="7th">7th</option><option value="8th">8th</option><option value="9th">9th</option>
+          <option value="10th">10th</option><option value="11th">11th</option><option value="12th">12th</option>
+        </select>
+        <button id="savePhotoBtn" class="save-btn">💾 Save</button>
+      </div>
+    </div>
+
+    <div id="toast">Saved</div>
   </div>
 
-  <!-- Capture button -->
-  <button id="captureBtn"></button>
+  <script>
+    // Elements
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const captureBtn = document.getElementById('captureBtn');
+    const formModal = document.getElementById('formModal');
+    const savePhotoBtn = document.getElementById('savePhotoBtn');
+    const studentNameInput = document.getElementById('studentName');
+    const studentClassInput = document.getElementById('studentClass');
+    const clearDataBtn = document.getElementById('clearDataBtn');
+    const downloadZipBtn = document.getElementById('downloadZipBtn');
+    const downloadClassSelect = document.getElementById('downloadClassSelect');
+    const toast = document.getElementById('toast');
 
-  <!-- Form for name & class -->
-  <div id="formSection" class="hidden">
-    <h3>Save Photo</h3>
-    <input type="text" id="studentName" placeholder="Student Name">
-    <select id="studentClass">
-      <option value="">Select Class</option>
-      <option value="NUR">NUR</option>
-      <option value="LKG">LKG</option>
-      <option value="UKG">UKG</option>
-      <option value="1st">1st</option>
-      <option value="2nd">2nd</option>
-      <option value="3rd">3rd</option>
-      <option value="4th">4th</option>
-      <option value="5th">5th</option>
-      <option value="6th">6th</option>
-      <option value="7th">7th</option>
-      <option value="8th">8th</option>
-      <option value="9th">9th</option>
-      <option value="10th">10th</option>
-      <option value="11th">11th</option>
-      <option value="12th">12th</option>
-    </select>
-    <br>
-    <button id="saveBtn">💾 Save</button>
-  </div>
+    // In-memory photos: { name, class, blob }
+    let photos = [];
+    let lastCapturedBlob = null;
+    let imageCapture = null;
 
-  <!-- Notify -->
-  <div id="notify">✅ Saved!</div>
-</div>
+    // Start camera with high-quality constraints (best-effort)
+    async function startCamera() {
+      try {
+        const constraints = {
+          audio: false,
+          video: {
+            facingMode: { ideal: "environment" },
+            width: { ideal: 3840 },    // ask for high resolution (4k ideal)
+            height: { ideal: 2160 }
+          }
+        };
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+        video.srcObject = stream;
 
-<script>
-  const video = document.getElementById('video');
-  const canvas = document.getElementById('canvas');
-  const context = canvas.getContext('2d');
-  const captureBtn = document.getElementById('captureBtn');
-  const formSection = document.getElementById('formSection');
-  const saveBtn = document.getElementById('saveBtn');
-  const notify = document.getElementById('notify');
-  const clearDataBtn = document.getElementById('clearDataBtn');
-  const downloadZipBtn = document.getElementById('downloadZipBtn');
+        // Attempt to create ImageCapture for higher quality photos
+        try {
+          const [track] = stream.getVideoTracks();
+          if (track && 'ImageCapture' in window) {
+            imageCapture = new ImageCapture(track);
+          } else {
+            imageCapture = null;
+          }
+        } catch (e) {
+          imageCapture = null;
+        }
+      } catch (err) {
+        // Fallback: try simpler constraints
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment", width: { ideal:1920 }, height:{ ideal:1080 } } });
+          video.srcObject = stream;
+          const [track] = stream.getVideoTracks();
+          if (track && 'ImageCapture' in window) {
+            try { imageCapture = new ImageCapture(track); } catch(e){ imageCapture = null; }
+          }
+        } catch (err2) {
+          alert('Cannot access camera: ' + err2);
+        }
+      }
+    }
 
-  let photos = [];
+    startCamera();
 
-  // Open high resolution rear camera
-  navigator.mediaDevices.getUserMedia({ 
-    video: { facingMode: "environment", width: { ideal: 1920 }, height
+    // Utility: show toast
+    function showToast(text, ms = 1400) {
+      toast.textContent = text;
+      toast.style.display = 'block';
+      clearTimeout(showToast._t);
+      showToast._t = setTimeout(()=> toast.style.display = 'none', ms);
+    }
+
+    // Fallback capture via canvas
+    function fallbackCaptureBlob() {
+      return new Promise((resolve) => {
+        const vw = video.videoWidth || Math.max(window.innerWidth, 1280);
+        const vh = video.videoHeight || Math.max(window.innerHeight, 720);
+        // Use high resolution canvas to keep quality
+        canvas.width = vw;
+        canvas.height = vh;
+        const ctx = canvas.getContext('2d');
+        // Mirror? we are using rear camera; do not mirror
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob((blob) => resolve(blob), 'image/jpeg', 0.95);
+      });
+    }
+
+    // Capture handler
+    captureBtn.addEventListener('click', async () => {
+      captureBtn.disabled = true;
+      try {
+        let blob = null;
+        if (imageCapture && typeof imageCapture.takePhoto === 'function') {
+          try {
+            // takePhoto yields a high-quality JPEG Blob on supported devices
+            blob = await imageCapture.takePhoto();
+          } catch (takeErr) {
+            // fallback on error
+            blob = await fallbackCaptureBlob();
+          }
+        } else {
+          blob = await fallbackCaptureBlob();
+        }
+
+        if (!blob) {
+          alert('Capture failed — try again.');
+          captureBtn.disabled = false;
+          return;
+        }
+
+        // Show captured snapshot while asking details
+        // draw blob to canvas (so user sees snapshot)
+        const imgUrl = URL.createObjectURL(blob);
+        const img = new Image();
+        img.onload = () => {
+          // set canvas to show the captured image
+          canvas.width = img.naturalWidth;
+          canvas.height = img.naturalHeight;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          video.style.display = 'none';
+          canvas.style.display = 'block';
+        };
+        img.src = imgUrl;
+
+        lastCapturedBlob = blob;
+        // open modal
+        formModal.style.display = 'flex';
+        formModal.setAttribute('aria-hidden', 'false');
+        studentNameInput.focus();
+      } catch (err) {
+        console.error('Capture error', err);
+        alert('Capture failed: ' + err);
+      } finally {
+        captureBtn.disabled = false;
+      }
+    });
+
+    // Save captured photo after user enters details
+    savePhotoBtn.addEventListener('click', async () => {
+      const name = studentNameInput.value.trim();
+      const sclass = studentClassInput.value.trim();
+      if (!name || !sclass) {
+        alert('Please enter both Name and Class.');
+        return;
+      }
+      if (!lastCapturedBlob) {
+        alert('No captured photo to save. Capture first.');
+        formModal.style.display = 'none';
+        canvas.style.display = 'none';
+        video.style.display = 'block';
+        return;
+      }
+
+      // store
+      photos.push({ name, class: sclass, blob: lastCapturedBlob });
+
+      // cleanup UI
+      lastCapturedBlob = null;
+      studentNameInput.value = '';
+      studentClassInput.value = '';
+      formModal.style.display = 'none';
+      formModal.setAttribute('aria-hidden', 'true');
+      canvas.style.display = 'none';
+      video.style.display = 'block';
+
+      showToast('✅ Saved');
+
+      // camera remains running and ready for next capture
+    });
+
+    // Clear data
+    clearDataBtn.addEventListener('click', () => {
+      if (!confirm('Clear all saved photos? This cannot be undone.')) return;
+      photos = [];
+      showToast('🗑️ Cleared');
+    });
+
+    // Download ZIP with class folders; files named Name.jpg inside each class folder
+    downloadZipBtn.addEventListener('click', async () => {
+      const selectedClass = downloadClassSelect.value; // empty means all classes
+      // filter
+      const list = selectedClass ? photos.filter(p => p.class === selectedClass) : photos.slice();
+      if (list.length === 0) {
+        alert('No photos to download for the selected class.');
+        return;
+      }
+
+      try {
+        const zip = new JSZip();
+        // group by class
+        const byClass = {};
+        for (const p of list) {
+          if (!byClass[p.class]) byClass[p.class] = [];
+          byClass[p.class].push(p);
+        }
+
+        // ensure unique names inside each class folder to avoid overwrites:
+        for (const cls of Object.keys(byClass)) {
+          const folder = zip.folder(cls);
+          const usedNames = new Set();
+          for (const p of byClass[cls]) {
+            let filename = `${p.name}.jpg`; // as requested: Name.jpg
+            // if duplicate inside same class, make unique by suffix (safe fallback)
+            if (usedNames.has(filename)) {
+              // append suffix (1), (2) etc - this only triggers if duplicate names exist
+              let i = 1;
+              let base = p.name;
+              let newName = `${base}(${i}).jpg`;
+              while (usedNames.has(newName)) {
+                i++;
+                newName = `${base}(${i}).jpg`;
+              }
+              filename = newName;
+            }
+            usedNames.add(filename);
+            folder.file(filename, p.blob);
+          }
+        }
+
+        showToast('Preparing ZIP...');
+        const content = await zip.generateAsync({ type: 'blob' });
+        const zipName = (selectedClass ? selectedClass + '_photos.zip' : 'all_classes_photos.zip');
+        saveAs(content, zipName);
+      } catch (err) {
+        console.error('ZIP error', err);
+        alert('Failed to prepare ZIP: ' + err);
+      }
+    });
+
+    // cleanup camera on page unload
+    window.addEventListener('pagehide', stopStream);
+    window.addEventListener('beforeunload', stopStream);
+    function stopStream() {
+      try {
+        const s = video.srcObject;
+        if (s && s.getTracks) s.getTracks().forEach(t => t.stop());
+      } catch (e) {}
+    }
+
+    // keyboard enter to save on desktop
+    studentNameInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') savePhotoBtn.click(); });
+
+    // Prevent double-tap zoom on iOS (some browsers)
+    let lastTouch = 0;
+    document.addEventListener('touchend', function (e) {
+      const now = new Date().getTime();
+      if (now - lastTouch <= 300) {
+        e.preventDefault();
+      }
+      lastTouch = now;
+    }, { passive:false });
+
+  </script>
+</body>
+</html>
