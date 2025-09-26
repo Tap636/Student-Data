@@ -9,11 +9,11 @@
     body {
       margin: 0;
       background: black;
-      overflow: hidden; /* lock screen */
+      overflow: hidden;
       font-family: Arial, sans-serif;
       color: white;
     }
-    /* Fullscreen camera container */
+    /* Fullscreen camera */
     #camera-container {
       position: fixed;
       top: 0; left: 0;
@@ -27,9 +27,9 @@
       position: absolute;
       top: 0; left: 0;
       width: 100%; height: 100%;
-      object-fit: cover; /* fill screen */
+      object-fit: cover;
     }
-    /* Top bar like real camera */
+    /* Top bar */
     #topBar {
       position: fixed;
       top: 0;
@@ -43,15 +43,16 @@
       background: rgba(0,0,0,0.5);
       border: none;
       color: white;
-      font-size: 18px;
-      padding: 12px 18px;
+      font-size: 20px;
+      padding: 14px 20px;
       border-radius: 10px;
       cursor: pointer;
+      font-weight: bold;
     }
     #topBar button:active {
       background: rgba(255,255,255,0.2);
     }
-    /* Capture button big circle */
+    /* Big Capture Button */
     #captureBtn {
       position: fixed;
       bottom: 40px;
@@ -92,6 +93,7 @@
       border-radius: 8px;
       border: 1px solid #ccc;
     }
+    /* Notify */
     #notify {
       position: fixed;
       bottom: 120px;
@@ -111,8 +113,8 @@
 
   <!-- Top bar -->
   <div id="topBar">
-    <button id="newProjectBtn">🆕 Project</button>
-    <button id="downloadZipBtn">⬇️ ZIP</button>
+    <button id="clearDataBtn">🗑️ Clear Data</button>
+    <button id="downloadZipBtn">⬇️ Download</button>
   </div>
 
   <!-- Camera -->
@@ -151,22 +153,22 @@
     const captureBtn = document.getElementById('captureBtn');
     const formModal = document.getElementById('formModal');
     const saveBtn = document.getElementById('saveBtn');
-    const newProjectBtn = document.getElementById('newProjectBtn');
+    const clearDataBtn = document.getElementById('clearDataBtn');
     const downloadZipBtn = document.getElementById('downloadZipBtn');
     const notify = document.getElementById('notify');
 
     let photos = [];
 
-    // ✅ Open rear camera in fullscreen high resolution
+    // ✅ Open rear camera with best quality
     navigator.mediaDevices.getUserMedia({ 
-      video: { facingMode: "environment", width: {ideal:1920}, height:{ideal:1080} } 
+      video: { facingMode: "environment", width: { ideal: 4096 }, height: { ideal: 2160 } }
     })
     .then(stream => { video.srcObject = stream; })
     .catch(err => alert("Camera error: " + err));
 
     // ✅ Capture
     captureBtn.addEventListener('click', () => {
-      canvas.width = 1080; // High res passport ratio
+      canvas.width = 1080;
       canvas.height = 1440;
       context.drawImage(video, 0, 0, canvas.width, canvas.height);
       video.classList.add('hidden');
@@ -200,11 +202,11 @@
       setTimeout(()=> notify.style.display='none', 1500);
     });
 
-    // ✅ New Project
-    newProjectBtn.addEventListener('click', () => {
-      if(confirm("Start new project? All saved photos will be deleted.")){
+    // ✅ Clear Data
+    clearDataBtn.addEventListener('click', () => {
+      if(confirm("Clear all saved images?")){
         photos = [];
-        alert("New project started.");
+        alert("All data cleared.");
       }
     });
 
@@ -213,7 +215,7 @@
       if (photos.length === 0) { alert("No photos saved."); return; }
       const zip = new JSZip();
       photos.forEach(p => {
-        zip.file(`${p.class}_${p.name}.jpg`, p.blob);
+        zip.file(`${p.name}.jpg`, p.blob);
       });
       zip.generateAsync({type:"blob"}).then(content=>{
         saveAs(content, "photos.zip");
